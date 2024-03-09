@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Profile 1": {
+      "commandName": "Executable",
+      "executablePath": "$(DW2_ROOT)\\DistantWorlds2.exe",
+      "commandLineArgs": "--low-level-inject \"$(TargetPath)!BundleImgValidator.Class1.Test\" --wait-for-debugger --skip-splash --continue",
+      "workingDirectory": "$(DW2_ROOT)\\"
+    }
+  }
+}

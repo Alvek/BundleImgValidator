@@ -1,0 +1,14 @@
+﻿namespace BundleImgValidator
+{
+    public class Class1
+    {
+        string text = ((VirtualFileSystem.ResolveProviderUnsafe("/asset", true).Provider == null) ? "/asset" : null);
+        ObjectDatabase objectDatabase = ObjectDatabase.CreateDefaultDatabase();
+        DatabaseFileProvider t = new DatabaseFileProvider(objectDatabase);
+        ServiceRegistry Services = new ServiceRegistry();
+        Services.AddService<IDatabaseFileProviderService>(new DatabaseFileProviderService(t));
+        var Content = new ContentManager(Services);
+        Services.AddService<IContentManager>(Content);
+        Services.AddService(Content);
+    }
+}
