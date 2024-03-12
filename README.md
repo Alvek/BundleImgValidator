@@ -14,4 +14,4 @@ Mod will log missing image assets from bundles that defined in *.xml files like 
 5. Check MissingFilesLog.txt file in mod folder for missing assets
 
 # Warning
-Do not remove or rename MissingFilesLog.txt, mod will crush if file is missing. Mod will clear it every time.
+Do not remove or rename MissingFilesLog.txt, mod will crash if file is missing. Mod will clear it every time.
