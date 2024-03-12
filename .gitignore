@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/BundleImgValidator/.vshistory/Class1.cs
+/BundleImgValidator/.vshistory/BundleImgValidator.csproj
+/BundleImgValidator/.vshistory

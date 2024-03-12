@@ -1,0 +1,154 @@
+﻿using BundleImgValidator;
+using DistantWorlds.Types;
+using HarmonyLib;
+using Stride.Core;
+using Stride.Core.IO;
+using Stride.Core.Serialization.Contents;
+using Stride.Core.Storage;
+using Stride.Engine;
+using Stride.Games;
+using Stride.Graphics;
+using Stride.Graphics.Data;
+using System.Reflection;
+using System.Reflection.Emit;
+
+public static class Mod
+{
+    public static void Init()
+    {
+        BundleImgValidator.Preloader.Init();
+    }
+}
+
+namespace BundleImgValidator
+{
+    public class Preloader
+    {
+        public static void Init()
+        {
+            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+            HarmonyPatcher.Init();
+        }
+        private static System.Reflection.Assembly? CurrentDomain_AssemblyResolve(object? sender, ResolveEventArgs args)
+        {
+            AssemblyName name = new AssemblyName(args.Name);
+            if (name.Name == "0Harmony")
+            {
+                var asmLoc = typeof(HarmonyPatcher).Assembly.Location;
+                var asmDir = Path.GetDirectoryName(asmLoc);
+                var harmonyDll = Path.Join(asmDir, "0Harmony.dll");
+                return Assembly.LoadFrom(harmonyDll);
+            }
+            return null;
+        }
+    }
+    public class HarmonyPatcher
+    {
+        public static void Init()
+        {
+            Core.ModRootLocation = Path.GetDirectoryName(Assembly.GetCallingAssembly().Location);
+            //Logger.ChannelFilter = Logger.LogChannel.All;
+            //Harmony.DEBUG = true;
+            //FileLog.Reset();
+            var harmony = new Harmony("DW2.BundleImbValidator");
+            harmony.PatchAll();
+
+            //FileLog.Log($"{DateTime.Now} patch done");
+            //FileLog.FlushBuffer();
+
+        }
+    }
+    [HarmonyDebug]
+    [HarmonyPatch(typeof(DistantWorlds.Types.Galaxy))]
+    [HarmonyPatch(nameof(DistantWorlds.Types.Galaxy.LoadImageForAllItemsStatic))]
+    public class GalaxyLogStreamPatcher
+    {
+        public static void Prefix()
+        {
+            Core.PrepareLogStream();
+        }
+        public static void Postfix()
+        {
+            Core.CloseLogStream();
+        }
+    }
+    [HarmonyDebug]
+    [HarmonyPatch(typeof(DistantWorlds.Types.Galaxy))]
+    [HarmonyPatch(nameof(DistantWorlds.Types.Galaxy.LoadImagesForItems))]
+    public class GalaxyLoadImagePatcher
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            //Troop troopClass = new Troop(null);
+            //TroopDefinitionExt troopDefClass = new TroopDefinitionExt(new TroopDefinition());
+
+            var codes = new List<CodeInstruction>(instructions);
+            for (var i = 0; i < codes.Count; i++)
+            {
+                if (codes[i].Calls(GetMethodInfo(typeof(ContentManager), nameof(ContentManager.Exists))) && codes[i + 1].opcode == OpCodes.Brtrue)
+                {
+
+                    codes.Insert(i + 2, new CodeInstruction(OpCodes.Ldloc_2));
+                    codes.Insert(i + 3, new CodeInstruction(OpCodes.Call, GetMethodInfo(typeof(Core), nameof(Core.LogMissingFile))));
+                    break;
+                }
+            }
+            return codes.AsEnumerable();
+        }
+        static MethodInfo GetMethodInfo(Func<Texture> method)
+        {
+            return method.Method;
+        }
+        static MethodInfo GetMethodInfo(Type type, string name)
+        {
+            return type.GetMethod(name);
+        }
+    }
+
+    public class BundleValidator
+    {
+
+        //public static void Main(string[] args)
+        //{
+        //    StanAloneTest();
+        //}
+        //public static void StanAloneTest()
+        //{
+        //    try
+        //    {
+        //        //
+        //        //string text = ((VirtualFileSystem.ResolveProviderUnsafe("/asset", true).Provider == null) ? "/asset" : null);
+        //        //string text = ((VirtualFileSystem.ResolveProviderUnsafe("d:\\Games\\Distant Worlds 2\\data\\db\\bundles\\", true).Provider == null) ? "/asset" : null);
+        //        ObjectDatabase objectDatabase = ObjectDatabase.CreateDefaultDatabase();
+        //        DatabaseFileProvider t = new DatabaseFileProvider(objectDatabase);
+        //        ServiceRegistry Services = new ServiceRegistry();
+        //        Services.AddService<IDatabaseFileProviderService>(new DatabaseFileProviderService(t));
+        //        var Content = new ContentManager(Services);
+        //        Services.AddService<IContentManager>(Content);
+        //        //var GraphicsDeviceManager = new GraphicsDeviceManager(new Game());
+        //        //Services.AddService<IGraphicsDeviceManager>(GraphicsDeviceManager);
+        //        //Services.AddService<IGraphicsDeviceService>(GraphicsDeviceManager);
+
+        //        Task.WaitAll(objectDatabase.LoadBundle("CoreContent"),
+        //        objectDatabase.LoadBundle("Pirates"),
+        //        objectDatabase.LoadBundle("Abandoned"),
+        //        objectDatabase.LoadBundle("Creatures"));
+
+
+        //        //IContentSerializer<Stride.Graphics.Image> serializer = (IContentSerializer<Stride.Graphics.Image>)Activator.CreateInstance(typeof(TextureSerializer).Assembly.GetType("Stride.Graphics.Data.ImageTextureSerializer", true), true);
+        //        //Content.Serializer.RegisterSerializer(serializer);
+        //        //var texture = Content.Load<Texture>("UserInterface/Placeholder", null);//need graphic service to load texture
+
+        //        bool res = Content.Exists("UserInterface/Placeholder");
+        //        Console.WriteLine(res);
+        //        Console.ReadLine();
+        //        var tt = Content.GetStats();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine(ex.Message);
+        //        Console.ReadLine();
+        //    }
+        //}
+    }
+}

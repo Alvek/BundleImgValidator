@@ -3,8 +3,11 @@
     "Profile 1": {
       "commandName": "Executable",
       "executablePath": "$(DW2_ROOT)\\DistantWorlds2.exe",
-      "commandLineArgs": "--low-level-inject \"$(TargetPath)!BundleImgValidator.Class1.Test\" --wait-for-debugger --skip-splash --continue",
+      "commandLineArgs": "--low-level-inject \"$(TargetPath)!Mod.Init\" --wait-for-debugger --skip-splash",
       "workingDirectory": "$(DW2_ROOT)\\"
+    },
+    "Profile 2": {
+      "commandName": "Project"
     }
   }
 }
