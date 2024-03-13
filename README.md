@@ -1,6 +1,6 @@
 # **DW2 bundle image validation mod**
 
-Mod will log missing image assets from bundles that defined in *.xml files like TroopDefinition.xml
+Mod will log missing image assets from bundles that defined in *.xml files like TroopDefinition.xml. Content mods included too if they are loaded by game. Checks for saved games not supported.
 
 # **Mod installation**
 
