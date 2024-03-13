@@ -11,9 +11,9 @@ namespace BundleImgValidator
         private const string _LogName = "MissingFilesLog.txt";
         private static StreamWriter? _logStream;
         public static string ModRootLocation { get; set; }
-        public static void LogMissingFile(string fileName)
+        public static void LogMissingFile(string name, string fileName)
         {
-            _logStream?.WriteLine(fileName);
+            _logStream?.WriteLine(name + "\t-> " + fileName);
         }
 
         public static void PrepareLogStream()
