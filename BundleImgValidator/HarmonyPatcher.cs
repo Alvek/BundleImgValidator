@@ -9,6 +9,7 @@ using Stride.Engine;
 using Stride.Games;
 using Stride.Graphics;
 using Stride.Graphics.Data;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -134,14 +135,21 @@ namespace BundleImgValidator
             var codes = new List<CodeInstruction>(instructions);
             for (var i = 0; i < codes.Count; i++)
             {
-                if (!setTextureFlag && codes[i].Calls(Helper.GetMethodInfo(typeof(ContentManager), nameof(ContentManager.Exists))) && codes[i + 1].opcode == OpCodes.Brtrue)
+                if (!setTextureFlag && codes[i].Calls(Helper.GetMethodInfo(typeof(Galaxy), nameof(Galaxy.GetEmpireColorFromFlag))) && codes[i + 1].labels.Count > 0)
                 {
-                    i += 2;
-                    //get obj name
+                    Label afterElseLabel = codes[i + 1].labels[0];
+                    i++;
+                    //set after els label to jump to from if
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Br, afterElseLabel));
+                    //get race name
+                    LocalBuilder q = new LocalBuilder();
+                    System.Reflection.Emit.ILGenerator t = new System.Reflection.Emit.ILGenerator();
+                    //ILGenerator t = ConstructorBuilder.GetILGenerator();
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1, 0));
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Callvirt, typeof(Race).GetProperty(nameof(Race.Name)).GetGetMethod()));
+                    // get local text variable containing current FlagFileName
                     codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1));
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Callvirt, typeof(IDrawableSummary).GetProperty(nameof(IDrawableSummary.Name)).GetGetMethod()));
-                    // get local text variable containing current ImageFileName
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_2));
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldfld, typeof(Race).GetField(nameof(Race.FlagFilename))));
                     //log missing asset
                     codes.Insert(i++, new CodeInstruction(OpCodes.Call, Helper.GetMethodInfo(typeof(Core), nameof(Core.LogMissingFile))));
 
