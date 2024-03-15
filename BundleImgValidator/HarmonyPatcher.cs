@@ -10,6 +10,7 @@ using Stride.Engine;
 using Stride.Games;
 using Stride.Graphics;
 using Stride.Graphics.Data;
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -182,29 +183,29 @@ namespace BundleImgValidator
     [HarmonyPatch(nameof(DistantWorlds.Types.Galaxy.LoadLargeOrbTypeImages))]
     public class GalaxyLoadLargeOrbTypeImagesPatcher
     {
-        static IEnumerable<CodeInstruction> Transpiler(ILGenerator ilGen, IEnumerable<CodeInstruction> instructions)
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var codes = new List<CodeInstruction>(instructions);
             for (var i = 0; i < codes.Count; i++)
             {
-                //check for generic mehtod type
+                //check for generic method type
                 if (codes[i].Calls(Helper.GetMethodInfo<Texture>(typeof(ContentManager), nameof(ContentManager.Load), new Type[] { typeof(string), typeof(ContentManagerLoaderSettings) })))
                 {
                     object targetLdfldObj = codes[i - 2].operand;
-                    Label afterElseLabel = codes[i + 2].labels[0];
+                    Label afterIfLbl = codes[i + 2].labels[0];
                     i++;
                     i++;
+                    //check if asset exists
                     codes.Insert(i++, new CodeInstruction(OpCodes.Ldarg_0));
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1));
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldfld, targetLdfldObj));
                     codes.Insert(i++, new CodeInstruction(OpCodes.Callvirt, Helper.GetMethodInfo(typeof(ContentManager), nameof(ContentManager.Exists))));
                     //set label to jump to if asset is pressent (skip logging)
-                    var lbl = ilGen.DefineLabel();
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Brtrue, lbl));
-                    //add new label, Harmony don't allow using same lable in differrent jumps?
-                    Helper.FindAndAddOtherLabel(codes, afterElseLabel, lbl);
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Brtrue, afterIfLbl));
                     //get race name, set new label
                     codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1));
                     codes.Insert(i++, new CodeInstruction(OpCodes.Callvirt, typeof(OrbType).GetProperty(nameof(OrbType.Name)).GetGetMethod()));
-                    // get local text variable containing current FlagFileName
+                    // get local text variable containing current orb text file name
                     codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1));
                     codes.Insert(i++, new CodeInstruction(OpCodes.Ldfld, targetLdfldObj));
                     //log missing asset
