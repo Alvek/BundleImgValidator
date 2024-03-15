@@ -42,5 +42,15 @@ namespace BundleImgValidator
             }
             throw new ApplicationException("Can't find previous jump code to replace label");
         }
+        public static void FindAndAddOtherLabel(List<CodeInstruction> codes, Label lblToFind, Label newLbl) 
+        {
+            for (int i = 0; i < codes.Count(); i++)
+            {
+                if (codes[i].labels.Contains(lblToFind))
+                {
+                    codes[i].WithLabels(newLbl);
+                }
+            }
+        }
     }
 }

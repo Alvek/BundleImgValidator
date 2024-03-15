@@ -194,13 +194,15 @@ namespace BundleImgValidator
                     Label afterElseLabel = codes[i + 2].labels[0];
                     i++;
                     i++;
-                    //set after else label to jump to from if inner code
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Br, afterElseLabel));
-                    //set label and fix jump adress
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldarg_0));
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Callvirt, Helper.GetMethodInfo(typeof(ContentManager), nameof(ContentManager.Exists))));
+                    //set label to jump to if asset is pressent (skip logging)
                     var lbl = ilGen.DefineLabel();
-                    Helper.ReplaceLabelForPreviousJump(codes, i - 2, lbl);
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Brtrue, lbl));
+                    //add new label, Harmony don't allow using same lable in differrent jumps?
+                    Helper.FindAndAddOtherLabel(codes, afterElseLabel, lbl);
                     //get race name, set new label
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1).WithLabels(lbl));
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1));
                     codes.Insert(i++, new CodeInstruction(OpCodes.Callvirt, typeof(OrbType).GetProperty(nameof(OrbType.Name)).GetGetMethod()));
                     // get local text variable containing current FlagFileName
                     codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1));
