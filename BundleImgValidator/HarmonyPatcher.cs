@@ -177,41 +177,41 @@ namespace BundleImgValidator
     }
 
 
-    //[HarmonyDebug]
-    //[HarmonyPatch(typeof(DistantWorlds.Types.Galaxy))]
-    //[HarmonyPatch(nameof(DistantWorlds.Types.Galaxy.LoadLargeOrbTypeImages))]
-    //public class GalaxyLoadLargeOrbTypeImagesPatcher
-    //{
-    //    static IEnumerable<CodeInstruction> Transpiler(ILGenerator ilGen, IEnumerable<CodeInstruction> instructions)
-    //    {
-    //        var codes = new List<CodeInstruction>(instructions);
-    //        for (var i = 0; i < codes.Count; i++)
-    //        {
-    //            //check for generic mehtod type
-    //            if (codes[i].Calls(Helper.GetMethodInfo<Texture>(typeof(ContentManager), nameof(ContentManager.Load), new Type[] { typeof(string), typeof(ContentManagerLoaderSettings) })))
-    //            {
-    //                object targetLdfldObj = codes[i - 2].operand;
-    //                Label afterElseLabel = codes[i + 2].labels[0];
-    //                i++;
-    //                i++;
-    //                //set after else label to jump to from if inner code
-    //                codes.Insert(i++, new CodeInstruction(OpCodes.Br, afterElseLabel));
-    //                //set label and fix jump adress
-    //                var lbl = ilGen.DefineLabel();
-    //                Helper.ReplaceLabelForPreviousJump(codes, i - 2, lbl);
-    //                //get race name, set new label
-    //                codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1).WithLabels(lbl));
-    //                codes.Insert(i++, new CodeInstruction(OpCodes.Callvirt, typeof(OrbType).GetProperty(nameof(OrbType.Name)).GetGetMethod()));
-    //                // get local text variable containing current FlagFileName
-    //                codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1));
-    //                codes.Insert(i++, new CodeInstruction(OpCodes.Ldfld, targetLdfldObj));
-    //                //log missing asset
-    //                codes.Insert(i++, new CodeInstruction(OpCodes.Call, Helper.GetMethodInfo(typeof(Core), nameof(Core.LogMissingFile))));
-    //            }
-    //        }
-    //        return codes.AsEnumerable();
-    //    }
-    //}
+    [HarmonyDebug]
+    [HarmonyPatch(typeof(DistantWorlds.Types.Galaxy))]
+    [HarmonyPatch(nameof(DistantWorlds.Types.Galaxy.LoadLargeOrbTypeImages))]
+    public class GalaxyLoadLargeOrbTypeImagesPatcher
+    {
+        static IEnumerable<CodeInstruction> Transpiler(ILGenerator ilGen, IEnumerable<CodeInstruction> instructions)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+            for (var i = 0; i < codes.Count; i++)
+            {
+                //check for generic mehtod type
+                if (codes[i].Calls(Helper.GetMethodInfo<Texture>(typeof(ContentManager), nameof(ContentManager.Load), new Type[] { typeof(string), typeof(ContentManagerLoaderSettings) })))
+                {
+                    object targetLdfldObj = codes[i - 2].operand;
+                    Label afterElseLabel = codes[i + 2].labels[0];
+                    i++;
+                    i++;
+                    //set after else label to jump to from if inner code
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Br, afterElseLabel));
+                    //set label and fix jump adress
+                    var lbl = ilGen.DefineLabel();
+                    Helper.ReplaceLabelForPreviousJump(codes, i - 2, lbl);
+                    //get race name, set new label
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1).WithLabels(lbl));
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Callvirt, typeof(OrbType).GetProperty(nameof(OrbType.Name)).GetGetMethod()));
+                    // get local text variable containing current FlagFileName
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1));
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldfld, targetLdfldObj));
+                    //log missing asset
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Call, Helper.GetMethodInfo(typeof(Core), nameof(Core.LogMissingFile))));
+                }
+            }
+            return codes.AsEnumerable();
+        }
+    }
 
 
 
