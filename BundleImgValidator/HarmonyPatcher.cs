@@ -3,6 +3,7 @@ using DistantWorlds.Types;
 using HarmonyLib;
 using Stride.Core;
 using Stride.Core.IO;
+using Stride.Core.Mathematics;
 using Stride.Core.Serialization.Contents;
 using Stride.Core.Storage;
 using Stride.Engine;
@@ -47,12 +48,6 @@ namespace BundleImgValidator
     {
         public static void Init()
         {
-            int i = 0;
-            int j = 1;
-            if (i < j)
-            { i = 3; }
-            else
-            { i = 4; }
             Core.ModRootLocation = Path.GetDirectoryName(Assembly.GetCallingAssembly().Location);
             //Logger.ChannelFilter = Logger.LogChannel.All;
             //Harmony.DEBUG = true;
@@ -129,23 +124,24 @@ namespace BundleImgValidator
     [HarmonyPatch(nameof(DistantWorlds.Types.Galaxy.LoadRaceFlagImages))]
     public class GalaxyLoadRaceFlagImagesPatcher
     {
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        static IEnumerable<CodeInstruction> Transpiler(ILGenerator ilGen, IEnumerable<CodeInstruction> instructions)
         {
-            bool setTextureFlag = false;
+            bool flagColorSetPatched = false;
             var codes = new List<CodeInstruction>(instructions);
             for (var i = 0; i < codes.Count; i++)
             {
-                if (!setTextureFlag && codes[i].Calls(Helper.GetMethodInfo(typeof(Galaxy), nameof(Galaxy.GetEmpireColorFromFlag))) && codes[i + 1].labels.Count > 0)
+                if (!flagColorSetPatched && codes[i].Calls(Helper.GetMethodInfo(typeof(Galaxy), nameof(Galaxy.GetEmpireColorFromFlag), new Type[] { typeof(Texture) })) && codes[i + 2].labels.Count > 0)
                 {
-                    Label afterElseLabel = codes[i + 1].labels[0];
+                    Label afterElseLabel = codes[i + 2].labels[0];
                     i++;
-                    //set after els label to jump to from if
+                    i++;
+                    //set after else label to jump to from if inner code
                     codes.Insert(i++, new CodeInstruction(OpCodes.Br, afterElseLabel));
-                    //get race name
-                    LocalBuilder q = new LocalBuilder();
-                    System.Reflection.Emit.ILGenerator t = new System.Reflection.Emit.ILGenerator();
-                    //ILGenerator t = ConstructorBuilder.GetILGenerator();
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1, 0));
+                    //set label and fix jump adress
+                    var lbl = ilGen.DefineLabel();
+                    Helper.ReplaceLabelForPreviousJump(codes, i - 2, lbl);
+                    //get race name, set new label
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1).WithLabels(lbl));
                     codes.Insert(i++, new CodeInstruction(OpCodes.Callvirt, typeof(Race).GetProperty(nameof(Race.Name)).GetGetMethod()));
                     // get local text variable containing current FlagFileName
                     codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1));
@@ -153,19 +149,23 @@ namespace BundleImgValidator
                     //log missing asset
                     codes.Insert(i++, new CodeInstruction(OpCodes.Call, Helper.GetMethodInfo(typeof(Core), nameof(Core.LogMissingFile))));
 
-                    setTextureFlag = true;
+                    flagColorSetPatched = true;
                     i += 5;
                 }
 
-                if (codes[i].Calls(Helper.GetMethodInfo(typeof(ColonyEventDefinition), nameof(ColonyEventDefinition.SetIcon))))
+                if (codes[i].Calls(Helper.GetMethodInfo(typeof(List<Color>), nameof(List<Color>.Add))))
                 {
                     i++;
+                    Label afterElseLabel = codes[i].labels[0];
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Br, afterElseLabel));
+                    //set label and fix jump adress
+                    var lbl = ilGen.DefineLabel();
+                    Helper.ReplaceLabelForPreviousJump(codes, i - 2, lbl);
                     //get obj name
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1));
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Callvirt, typeof(IDrawableSummary).GetProperty(nameof(IDrawableSummary.Name)).GetGetMethod()));
-                    //get icon file name
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_S, 4));
-                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldfld, typeof(ColonyEventDefinition).GetField(nameof(ColonyEventDefinition.IconFilename))));
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1).WithLabels(lbl));
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Callvirt, typeof(Race).GetProperty(nameof(Race.Name)).GetGetMethod()));
+                    //get alt flag name
+                    codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_S, 6));
                     //log missing asset
                     codes.Insert(i++, new CodeInstruction(OpCodes.Call, Helper.GetMethodInfo(typeof(Core), nameof(Core.LogMissingFile))));
                     break;
@@ -175,6 +175,44 @@ namespace BundleImgValidator
             return codes.AsEnumerable();
         }
     }
+
+
+    //[HarmonyDebug]
+    //[HarmonyPatch(typeof(DistantWorlds.Types.Galaxy))]
+    //[HarmonyPatch(nameof(DistantWorlds.Types.Galaxy.LoadLargeOrbTypeImages))]
+    //public class GalaxyLoadLargeOrbTypeImagesPatcher
+    //{
+    //    static IEnumerable<CodeInstruction> Transpiler(ILGenerator ilGen, IEnumerable<CodeInstruction> instructions)
+    //    {
+    //        var codes = new List<CodeInstruction>(instructions);
+    //        for (var i = 0; i < codes.Count; i++)
+    //        {
+    //            //check for generic mehtod type
+    //            if (codes[i].Calls(Helper.GetMethodInfo<Texture>(typeof(ContentManager), nameof(ContentManager.Load), new Type[] { typeof(string), typeof(ContentManagerLoaderSettings) })))
+    //            {
+    //                object targetLdfldObj = codes[i - 2].operand;
+    //                Label afterElseLabel = codes[i + 2].labels[0];
+    //                i++;
+    //                i++;
+    //                //set after else label to jump to from if inner code
+    //                codes.Insert(i++, new CodeInstruction(OpCodes.Br, afterElseLabel));
+    //                //set label and fix jump adress
+    //                var lbl = ilGen.DefineLabel();
+    //                Helper.ReplaceLabelForPreviousJump(codes, i - 2, lbl);
+    //                //get race name, set new label
+    //                codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1).WithLabels(lbl));
+    //                codes.Insert(i++, new CodeInstruction(OpCodes.Callvirt, typeof(OrbType).GetProperty(nameof(OrbType.Name)).GetGetMethod()));
+    //                // get local text variable containing current FlagFileName
+    //                codes.Insert(i++, new CodeInstruction(OpCodes.Ldloc_1));
+    //                codes.Insert(i++, new CodeInstruction(OpCodes.Ldfld, targetLdfldObj));
+    //                //log missing asset
+    //                codes.Insert(i++, new CodeInstruction(OpCodes.Call, Helper.GetMethodInfo(typeof(Core), nameof(Core.LogMissingFile))));
+    //            }
+    //        }
+    //        return codes.AsEnumerable();
+    //    }
+    //}
+
 
 
     public class BundleValidator
