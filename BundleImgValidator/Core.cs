@@ -35,6 +35,8 @@ namespace BundleImgValidator
         public static void CloseLogStream()
         {
             _logStream?.Close();
+            _logStream?.Dispose();
+            _logStream = null;
         }
     }
 }

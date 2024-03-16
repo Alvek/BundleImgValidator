@@ -16,6 +16,10 @@ namespace BundleImgValidator
         {
             return method.Method;
         }
+        public static MethodInfo GetMethodInfo(Action method)
+        {
+            return method.Method;
+        }
         public static MethodInfo GetMethodInfo(Type type, string name)
         {
             return type.GetMethod(name);

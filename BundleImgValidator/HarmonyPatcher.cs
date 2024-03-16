@@ -1,5 +1,6 @@
 ﻿using BundleImgValidator;
 using DistantWorlds.Types;
+using DistantWorlds2;
 using HarmonyLib;
 using Stride.Core;
 using Stride.Core.IO;
@@ -215,6 +216,33 @@ namespace BundleImgValidator
             return codes.AsEnumerable();
         }
     }
+
+    [HarmonyDebug]
+    [HarmonyPatch(typeof(DistantWorlds2.DWGame))]
+    [HarmonyPatch(nameof(DistantWorlds2.DWGame.ReloadData))]
+    public class DwGameReloadDataPatcher
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var codes = new List<CodeInstruction>(instructions);
+            for (var i = 0; i < codes.Count; i++)
+            {
+                //prepare stream
+                if (codes[i].Calls(Helper.GetMethodInfo(typeof(DWGame), nameof(DWGame.DisableDrawing))))
+                {
+                    codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, Helper.GetMethodInfo(Core.PrepareLogStream)));
+                }
+                //close stream
+                if (codes[i].Calls(Helper.GetMethodInfo(typeof(DWGame), nameof(DWGame.EnableDrawing))))
+                {
+                    codes.Insert(i + 1, new CodeInstruction(OpCodes.Call, Helper.GetMethodInfo(Core.CloseLogStream)));
+                    break;
+                }
+            }
+            return codes.AsEnumerable();
+        }
+    }
+
 
 
 
