@@ -65,7 +65,21 @@ namespace BundleImgValidator
     [HarmonyDebug]
     [HarmonyPatch(typeof(DistantWorlds.Types.Galaxy))]
     [HarmonyPatch(nameof(DistantWorlds.Types.Galaxy.LoadImageForAllItemsStatic))]
-    public class GalaxyLogStreamPatcher
+    public class GalaxyLogStreamPatcher1
+    {
+        public static void Prefix()
+        {
+            Core.PrepareLogStream();
+        }
+        public static void Postfix()
+        {
+            Core.CloseLogStream();
+        }
+    }
+    [HarmonyDebug]
+    [HarmonyPatch(typeof(DistantWorlds.Types.Galaxy))]
+    [HarmonyPatch(nameof(DistantWorlds.Types.Galaxy.LoadImageForAllItems))]
+    public class GalaxyLogStreamPatcher2
     {
         public static void Prefix()
         {
