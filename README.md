@@ -15,3 +15,10 @@ Mod will log missing image assets from bundles that defined in *.xml files like 
 
 # Warning
 Do not remove or rename MissingFilesLog.txt, mod will crash if file is missing. Mod will clear it every time.
+
+# Building
+In case you need to build version yourself:
+
+Set your DW2 game folder path in "Directory.Build.props" 'DW2_ROOT' variable. That will allow debugging and using latest dependencies from game folder.
+
+Copy MonoMod.*.dll, Mono.*.dll and 0Harmony.dll from current release to your Debug\Release folder.
